@@ -23,7 +23,7 @@ class VkUser:
       'fields': 'sex, city, status, relation, bdate'
       }
     req = requests.get(self.UsersInfo_url, params={**self.params, **self.UsersInfo_params}).json()
-    pprint(req)
+    # pprint(req)
 
     if 'sex' in req['response'][0]:
       client_sex = req['response'][0]['sex']
@@ -115,7 +115,7 @@ class VkUser:
     elif client_info_all['sex'] == 2:
       pare_info['age_from'] = 2021 - int(client_info_all['bdate']) - 5
       pare_info['age_to'] = 2021 - int(client_info_all['bdate'])
-    print(pare_info)
+    # print(pare_info)
 
     self.search_id_url = self.url + 'users.search'
     self.search_id_params = {
@@ -156,8 +156,6 @@ class VkUser:
     photos_dict = sorted(photos_dict.items(), key=lambda t: t[1])
     if len(photos_dict) > 3:
       photos_dict = photos_dict[-3:]
-    url_pare = 'https://vk.com/id' + str(owner_id)
-
     return photos_dict
 
 if __name__ == "__main__":
@@ -188,25 +186,26 @@ if __name__ == "__main__":
     # pprint(client_info_all)
 
     pare_info = vk_client.search_pare(client_info_all)
-    pprint(pare_info)
+    # pprint(pare_info)
 
     url_pare = 'https://vk.com/id' + str(pare_info[0])
 
-    photo1 = vk_client.search_photos(pare_info[0])
-    photo2 = vk_client.search_photos(pare_info[1])
-    photo3 = vk_client.search_photos(pare_info[2])
-    sms = str(url_pare) + ' ' + str(photo1[0][0]) + ' ' + str(photo2[0][0]) + ' ' + str(photo3[0][0])
+    photos_dict = vk_client.search_photos(pare_info[0])
+    # pprint(photos_dict)
+    sms = []
+    sms.append(url_pare)
+    for i in photos_dict:
+      sms.append(i[0])
     return(sms)
 
-  # pprint(search_pare_photos(id_client, vk_client))
+  pprint(search_pare_photos(id_client, vk_client))
 
 
     # Создадим функцию для ответа на сообщения в лс группы
   def blasthack(id, text):
       vk_group.method('messages.send', {'user_id' : id, 'message' : text, 'random_id': 0})
 
-
- # Слушаем longpoll(Сообщения)
+#  Слушаем longpoll(Сообщения)
   for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW:
 
@@ -224,13 +223,13 @@ if __name__ == "__main__":
           blasthack(id_client, 'Для подбора пары введите 1')
           
         elif message == '1':
-          sms = search_pare_photos(id_client, vk_client)
-          blasthack(id_client, sms)
-          
-
+          text = search_pare_photos(id_client, vk_client)
+          for i in text:
+            sms = str(i)
+            blasthack(id_client, sms)
+       
         elif message == 'как дела?':
           blasthack(id_client, 'Хорошо, а твои как?')
-
 
         else:
           blasthack(id_client, 'Я вас не понимаю! :(')
