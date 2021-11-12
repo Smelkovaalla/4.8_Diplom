@@ -130,9 +130,33 @@ class VkUser:
     pare2 = req['response']['items'][1]['id']
     pare3 = req['response']['items'][2]['id']
     pare = [pare1, pare2, pare3]
-    return req, pare
+    return pare
 
+# Поиск фото по номеру аккаунта
+  def search_photos(self, owner_id, sorting=0):
+    self.photos_search_url = self.url + 'photos.get'
+    self.photos_search_params = {
+      'count': 50,
+      'owner_id': owner_id,
+      'extended': 1,
+      'album_id': 'profile'
+    }
+    req = requests.get(self.photos_search_url, params={**self.params, **self.photos_search_params}).json()
+    req = req['response']['items']
+    photos_count = len(req)
+    print(photos_count)
+    photos_dict = {}
+    i = 0
+    while i < photos_count:   
+      likes = req[i]['likes']['count']
+      comments = req[i]['comments']['count']
+      photos_dict[req[i]['sizes'][-1]['url']] = int(likes) + int(comments)
+      i += 1
+    photos_dict = sorted(photos_dict.items(), key=lambda t: t[1])
+    if len(photos_dict) > 3:
+      photos_dict = photos_dict[-3:]
 
+    return photos_dict
 
 if __name__ == "__main__":
    
@@ -143,26 +167,34 @@ if __name__ == "__main__":
     token_VK = file_object.read().strip()
 
 
+
   # VK = VKinder_Bot()
   vk_group = vk_api.VkApi(token=token_VK_group)
   vk_session = vk_group.get_api()
   longpoll = VkLongPoll(vk_group)
-  
-
   vk_client = VkUser(token_VK)
-  
-  id_client = 327722579
-
-  client_info = vk_client.UsersInfo(id_client)
-  pprint(client_info)
-
-  client_info_all = vk_client.UsersInfo_all(client_info)
-  pprint(client_info_all)
-
-  pare_info = vk_client.search_pare(client_info_all)
-  pprint(pare_info)
 
 
+
+  id_client = 135378796
+
+  def search_pare_photos(vk_client):
+    client_info = vk_client.UsersInfo(id_client)
+    pprint(client_info)
+
+    client_info_all = vk_client.UsersInfo_all(client_info)
+    pprint(client_info_all)
+
+    pare_info = vk_client.search_pare(client_info_all)
+    pprint(pare_info)
+
+    photos = vk_client.search_photos(pare_info[0])
+
+    pprint(photos)
+
+
+
+  search_pare_photos(vk_client)
 
 
     # Создадим функцию для ответа на сообщения в лс группы
