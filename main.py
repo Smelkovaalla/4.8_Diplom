@@ -15,6 +15,7 @@ class VkUser:
       'v': '5.131'
     }
 
+# Метод для поиска необходимой информации о клиенте
   def UsersInfo(self, id_client):
     self.UsersInfo_url = self.url + 'users.get'
     self.UsersInfo_params = {
@@ -22,7 +23,6 @@ class VkUser:
       'fields': 'sex, city, status, relation, bdate'
       }
     req = requests.get(self.UsersInfo_url, params={**self.params, **self.UsersInfo_params}).json()
-
     pprint(req)
 
     if 'sex' in req['response'][0]:
@@ -70,6 +70,7 @@ class VkUser:
     client_info['status'] = client_relation
     return client_info
 
+# Если информации недостаточно, запрашиваем необходимую.
   def UsersInfo_all(self, client_info):
       
     client_info_all = client_info
@@ -99,7 +100,7 @@ class VkUser:
 
     return client_info_all
 
-
+# Подбираем параметры для пары клиента и ищем 3 подходящих кандидатов 
   def search_pare(self, client_info_all):
     pare_info = {}
     pare_info['status'] = '1'
@@ -132,7 +133,7 @@ class VkUser:
     pare = [pare1, pare2, pare3]
     return pare
 
-# Поиск фото по номеру аккаунта
+# Поиск фото по id аккаунта, сортировка фото по популярности
   def search_photos(self, owner_id, sorting=0):
     self.photos_search_url = self.url + 'photos.get'
     self.photos_search_params = {
@@ -144,7 +145,7 @@ class VkUser:
     req = requests.get(self.photos_search_url, params={**self.params, **self.photos_search_params}).json()
     req = req['response']['items']
     photos_count = len(req)
-    print(photos_count)
+
     photos_dict = {}
     i = 0
     while i < photos_count:   
@@ -155,6 +156,7 @@ class VkUser:
     photos_dict = sorted(photos_dict.items(), key=lambda t: t[1])
     if len(photos_dict) > 3:
       photos_dict = photos_dict[-3:]
+    url_pare = 'https://vk.com/id' + str(owner_id)
 
     return photos_dict
 
@@ -178,23 +180,25 @@ if __name__ == "__main__":
 
   id_client = 135378796
 
-  def search_pare_photos(vk_client):
+  def search_pare_photos(id_client, vk_client):
     client_info = vk_client.UsersInfo(id_client)
-    pprint(client_info)
+    # pprint(client_info)
 
     client_info_all = vk_client.UsersInfo_all(client_info)
-    pprint(client_info_all)
+    # pprint(client_info_all)
 
     pare_info = vk_client.search_pare(client_info_all)
     pprint(pare_info)
 
-    photos = vk_client.search_photos(pare_info[0])
+    url_pare = 'https://vk.com/id' + str(pare_info[0])
 
-    pprint(photos)
+    photo1 = vk_client.search_photos(pare_info[0])
+    photo2 = vk_client.search_photos(pare_info[1])
+    photo3 = vk_client.search_photos(pare_info[2])
+    sms = str(url_pare) + ' ' + str(photo1[0][0]) + ' ' + str(photo2[0][0]) + ' ' + str(photo3[0][0])
+    return(sms)
 
-
-
-  search_pare_photos(vk_client)
+  # pprint(search_pare_photos(id_client, vk_client))
 
 
     # Создадим функцию для ответа на сообщения в лс группы
@@ -202,31 +206,34 @@ if __name__ == "__main__":
       vk_group.method('messages.send', {'user_id' : id, 'message' : text, 'random_id': 0})
 
 
-#  # Слушаем longpoll(Сообщения)
-#   for event in longpoll.listen():
-#     if event.type == VkEventType.MESSAGE_NEW:
+ # Слушаем longpoll(Сообщения)
+  for event in longpoll.listen():
+    if event.type == VkEventType.MESSAGE_NEW:
 
-#       # Чтобы наш бот не слышал и не отвечал на самого себя
-#       if event.to_me:
+      # Чтобы наш бот не слышал и не отвечал на самого себя
+      if event.to_me:
 
-#         # Для того чтобы бот читал все с маленьких букв 
-#         message = event.text.lower()
+        # Для того чтобы бот читал все с маленьких букв 
+        message = event.text.lower()
 
-#         # Получаем id пользователя
-#         id_client = event.user_id
-#         ProfileInfo = vk_client.ProfileInfo(id_client)
-#         # Структура переписки
-#         if message == 'привет':
-#           blasthack(id_client, 'Для подбора пары введите 1')
+        # Получаем id пользователя
+        id_client = event.user_id
 
-#         elif message == 'как дела?':
-#           blasthack(id_client, 'Хорошо, а твои как?')
+        # Структура переписки
+        if message == 'привет':
+          blasthack(id_client, 'Для подбора пары введите 1')
+          
+        elif message == '1':
+          sms = search_pare_photos(id_client, vk_client)
+          blasthack(id_client, sms)
+          
 
-#         elif message == '1':
-#           blasthack(id_client, id_client)
+        elif message == 'как дела?':
+          blasthack(id_client, 'Хорошо, а твои как?')
 
-#         else:
-#           blasthack(id_client, 'Я вас не понимаю! :(')
+
+        else:
+          blasthack(id_client, 'Я вас не понимаю! :(')
 
 
 
