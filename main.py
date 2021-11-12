@@ -15,16 +15,6 @@ class VkUser:
       'v': '5.131'
     }
 
-  def ProfileInfo(self):
-
-    self.ProfileInfo_url = self.url + 'account.getProfileInfo'
-    # self.ProfileInfo.params = {
-    #   'user_id': id_client
-    #   }
-    req = requests.get(self.ProfileInfo_url, params={**self.params}).json()
-    return req
-
-
   def UsersInfo(self, id_client):
     self.UsersInfo_url = self.url + 'users.get'
     self.UsersInfo_params = {
@@ -53,7 +43,7 @@ class VkUser:
       client_bdate = req['response'][0]['bdate']
       client_info = {}
       client_bdate = str(client_bdate)
-      bdate = client_bdate[5:]
+      bdate = client_bdate[-4:]
       bdate = int(bdate)
     else:
       bdate = ''
@@ -119,10 +109,11 @@ class VkUser:
     elif client_info_all['sex'] == 2:
       pare_info['sex'] = '1'
     if client_info_all['sex'] == 1:
-      pare_info['bdate'] = int(client_info_all['bdate']) - 2
+      pare_info['age_from'] = 2021 - int(client_info_all['bdate'])
+      pare_info['age_to'] = 2021 - int(client_info_all['bdate']) + 5
     elif client_info_all['sex'] == 2:
-      pare_info['bdate'] = int(client_info_all['bdate']) + 2
-
+      pare_info['age_from'] = 2021 - int(client_info_all['bdate']) - 5
+      pare_info['age_to'] = 2021 - int(client_info_all['bdate'])
     print(pare_info)
 
     self.search_id_url = self.url + 'users.search'
@@ -131,11 +122,15 @@ class VkUser:
       'sex': pare_info['sex'],
       'hometown': pare_info['city'],
       'status': pare_info['status'],
-      'birth_year': pare_info['bdate']
+      'age_from' : pare_info['age_from'],
+      'age_to' : pare_info['age_to']
     }
     req = requests.get(self.search_id_url, params={**self.params, **self.search_id_params}).json() 
-
-    return req
+    pare1 = req['response']['items'][0]['id']
+    pare2 = req['response']['items'][1]['id']
+    pare3 = req['response']['items'][2]['id']
+    pare = [pare1, pare2, pare3]
+    return req, pare
 
 
 
@@ -144,15 +139,19 @@ if __name__ == "__main__":
   # Получение ТОКЕНА. Если нет прикрепленного файла, используем ручной ввод.
   with open('token_VK_group.txt', 'r') as file_object:
     token_VK_group = file_object.read().strip()
+  with open('token_VK.txt', 'r') as file_object:
+    token_VK = file_object.read().strip()
+
 
   # VK = VKinder_Bot()
   vk_group = vk_api.VkApi(token=token_VK_group)
   vk_session = vk_group.get_api()
   longpoll = VkLongPoll(vk_group)
   
-  vk_client = VkUser(token_VK_group)
+
+  vk_client = VkUser(token_VK)
   
-  id_client = 12415666
+  id_client = 327722579
 
   client_info = vk_client.UsersInfo(id_client)
   pprint(client_info)
