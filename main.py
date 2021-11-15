@@ -56,16 +56,20 @@ class VkUser:
 
   def search_city(self):
     self.search_city_url = self.url + 'database.getCities'
-    self.search_city_params = {
-      'count':1000,
-      'country_id':1,
-      'need_all':0
-    }
-    req = requests.get(self.search_city_url, params={**self.params, **self.search_city_params}).json() 
     city_list = []
-    for i in req['response']['items']:
-      a = i['title'].lower()
-      city_list.append(a)
+    v = [1, 7]
+    for c in v:
+      self.search_city_params = {
+        'count':1000,
+        'country_id': c,
+        'need_all':0
+      }  
+      req = requests.get(self.search_city_url, params={**self.params, **self.search_city_params}).json() 
+      for i in req['response']['items']:
+        a = i['title'].lower()
+        city_list.append(a)
+
+    # pprint(city_list)
     return city_list
 
 # Подбираем параметры для пары клиента и ищем 3 подходящих кандидатов 
@@ -94,10 +98,16 @@ class VkUser:
       'age_from' : pare_info['age_from'],
       'age_to' : pare_info['age_to']
     }
-    req = requests.get(self.search_id_url, params={**self.params, **self.search_id_params}).json() 
-    m = randint(0, 100)
-    pare = req['response']['items'][m]['id']
-    return pare
+    req = requests.get(self.search_id_url, params={**self.params, **self.search_id_params}).json()
+    pprint(req)
+    if req['response']['count'] == 0:
+      pare_id = 1
+      return pare_id
+    else:
+      num = len(req['response']['items']) 
+      m = randint(0, num - 1)
+      pare_id = req['response']['items'][m]['id']
+      return pare_id
 
 # Поиск фото по id аккаунта, сортировка фото по популярности
   def search_photos(self, pare_id, sorting=0):
@@ -133,101 +143,81 @@ if __name__ == "__main__":
     token_VK = file_object.read().strip()
 
 
-
-  # VK = VKinder_Bot()
   vk_group = vk_api.VkApi(token=token_VK_group)
   vk_session = vk_group.get_api()
-  longpoll = VkLongPoll(vk_group)
-  
+  longpoll = VkLongPoll(vk_group) 
   vk_client = VkUser(token_VK)
 
 
+  def search_pare_photos(client_info_all):
+    pare_id = vk_client.search_pare(client_info_all)
+    if pare_id == 1:
+      sms = ['Простите, для вас в ВК пары нет, сходите в театр']
+      return sms
+    else:
+      url_pare = 'https://vk.com/id' + str(pare_id)
+      photos_dict = vk_client.search_photos(pare_id)
+      sms = []
+      sms.append(url_pare)
+      for i in photos_dict:
+        sms.append(i[0])
+      return sms
 
-  # id_client = 135378796
-
-  # def search_pare_photos(id_client, vk_client):
-  #   client_info = vk_client.UsersInfo(id_client)
-  #   # pprint(client_info)
-
-  #   client_info_all = vk_client.UsersInfo_all(client_info)
-  #   # pprint(client_info_all)
-
-  def search_pare_photos(client_info):
-    pare_id = vk_client.search_pare(client_info)
-    pprint(pare_id)
-    url_pare = 'https://vk.com/id' + str(pare_id)
-    photos_dict = vk_client.search_photos(pare_id)
-    pprint(photos_dict)
-    sms = []
-    sms.append(url_pare)
-    for i in photos_dict:
-      sms.append(i[0])
-    print(sms)
-    return(sms)
-
-  # pprint(search_pare_photos(id_client))
 
     # Создадим функцию для ответа на сообщения в лс группы
   def blasthack(id, text):
       vk_group.method('messages.send', {'user_id' : id, 'message' : text, 'random_id': 0})
 
-  # def answer(event_id, user_id, peer_id, event_data):
-  #     vk_group.method('messages.sendMessageEventAnswer', {
-  #       'event_id' : event_id, 
-  #       'user_id' : user_id, 
-  #       'peer_id' : peer_id, 
-  #       'event_data' : event_data})
+  def chat_bot():
+    client_info_all = {}
+    # Слушаем longpoll(Сообщения)
+    for event in longpoll.listen():
+      if event.type == VkEventType.MESSAGE_NEW:
+        # Чтобы наш бот не слышал и не отвечал на самого себя
+        if event.to_me:
+          # Для того чтобы бот читал все с маленьких букв 
+          message = event.text.lower()
+          # Получаем id пользователя
+          user_id = event.user_id
+          client_info = vk_client.UsersInfo(user_id)
+          city_list = vk_client.search_city()
+          pprint(client_info_all)
+          # Структура переписки
+          if message == 'привет':
+            client_info_all = client_info
+            if len(client_info) == 4 and client_info_all['status'] != 0:
+              blasthack(user_id, 'Ваши данные полные, введите "найди пару"')
+            elif len(client_info) == 4 and client_info_all['status'] == 0:
+              client_info_all['status'] = 6
+              blasthack(user_id, 'Ваш статус неопределен, ищем для вас партнера в активном поиске, введите "найди пару"') 
+            elif len(client_info) == 3:
+              if 'sex' not in client_info:
+                blasthack(user_id, 'Ваш пол не установлен, введите ж или м')
+              elif 'city' not in client_info:
+                blasthack(user_id, 'Введите название вашего города')
+              elif 'bdate' not in client_info:
+                blasthack(user_id, 'Введите год вашего рождения')  
 
-  
-  # city_list = ['санкт-петербург', 'москва']
-  client_info_all = {}
-# #  Слушаем longpoll(Сообщения)
-  for event in longpoll.listen():
-    if event.type == VkEventType.MESSAGE_NEW:
-      # Чтобы наш бот не слышал и не отвечал на самого себя
-      if event.to_me:
-        # Для того чтобы бот читал все с маленьких букв 
-        message = event.text.lower()
-        # Получаем id пользователя
-        user_id = event.user_id
-        client_info = vk_client.UsersInfo(user_id)
-        city_list = vk_client.search_city()
-        pprint(city_list)
-        # Структура переписки
-        if message == 'привет':
-          client_info_all = client_info
-          if len(client_info) == 4:             
+          elif message == 'ж':
+            client_info_all['sex'] = 1        
             blasthack(user_id, 'Ваши данные полные, введите "найди пару"')  
-          elif len(client_info) == 3:
-            if 'sex' not in client_info:
-              blasthack(user_id, 'Ваш пол не установлен, введите ж или м')            
-            elif 'city' not in client_info:
-              blasthack(user_id, 'Введите название вашего города')
-            elif 'bdate' not in client_info:
-              blasthack(user_id, 'Введите год вашего рождения')  
-            elif client_info_all['status'] == '0':
-              client_info_all['status'] = '6'
-              blasthack(user_id, 'Ваши данные полные, введите "найди пару"')                       
-        elif message == 'ж':
-          client_info_all['sex'] = 1        
-          blasthack(user_id, 'Ваши данные полные, введите "найди пару"')  
-        elif message == 'м':
-          client_info_all['sex'] = 2        
-          blasthack(user_id, 'Ваши данные полные, введите "найди пару"')  
-        elif message in city_list:
-          client_info_all['city'] = message
-          blasthack(user_id, 'Ваши данные полные, введите "найди пару"')    
-        elif len(str(message)) == 4:
-          client_info_all['bdate'] = message
-          blasthack(user_id, 'Дата рождения принята, Ваши данные полные, введите "найди пару"')          
-          
-        elif message == 'найди пару':    
-          text = search_pare_photos(client_info_all)
-          for i in text:
-            sms = str(i)
-            blasthack(user_id, sms)
-        else:
-          blasthack(user_id, 'Я вас не понимаю')  
+          elif message == 'м':
+            client_info_all['sex'] = 2        
+            blasthack(user_id, 'Ваши данные полные, введите "найди пару"')  
+          elif message in city_list:
+            client_info_all['city'] = message
+            blasthack(user_id, 'Ваши данные полные, введите "найди пару"')    
+          elif len(str(message)) == 4 and 19 <= int(message)/100 <=20:
+            client_info_all['bdate'] = message
+            blasthack(user_id, 'Дата рождения принята, Ваши данные полные, введите "найди пару"')
+          elif message == 'найди пару':    
+            text = search_pare_photos(client_info_all)
+            for i in text:
+              sms = str(i)
+              blasthack(user_id, sms)
+          else:
+            blasthack(user_id, 'Я вас не понимаю, для начала поиска пары введите "привет"') 
 
 
+chat_bot()
 
