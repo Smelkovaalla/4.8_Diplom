@@ -7,6 +7,7 @@ authors = ["Your Name <you@example.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 vk-api = "^11.9.6"
+SQLAlchemy = "^1.4.27"
 
 [tool.poetry.dev-dependencies]
 

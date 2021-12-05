@@ -1,0 +1,8 @@
+pprint
+requests
+vk_api
+vk_api.longpoll
+json
+random
+sqlalchemy
+psycopg2

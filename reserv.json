@@ -1,0 +1,22 @@
+{
+    "client_info": {
+        "id_client": 86791,
+        "first_name": "Алла",
+        "last_name": "Смелкова",
+        "sex": 1,
+        "city": "Санкт-Петербург",
+        "bdate": 1988,
+        "status": 0
+    },
+    "partner_info": {
+        "pare_id": 668819805,
+        "sex": "2",
+        "city": "Санкт-Петербург",
+        "bdate": 1986,
+        "status": "6"
+    },
+    "Photo": {
+        "pare_id": 668819805,
+        "url_photo": "h"
+    }
+}
